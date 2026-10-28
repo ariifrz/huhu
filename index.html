@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>For You</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Jost:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--fg:#f4ecd8;--card:#111a2e;--line:rgba(244,236,216,.22);--accent:#e9c68a;--serif:"Cormorant Garamond",Georgia,serif;--sans:"Jost","Helvetica Neue",Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--serif)}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);overflow:hidden}
+canvas{width:min(100vw,560px,calc(78vh*.8333));height:auto;display:block}
+#snd{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:4;background:none;border:0;border-bottom:1px solid var(--line);color:var(--fg);font-family:var(--sans);font-weight:300;font-size:11px;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;padding:4px 2px;opacity:.7}
+#hint{font-family:var(--sans);font-weight:300;font-size:12px;letter-spacing:.35em;text-transform:uppercase;color:var(--accent);margin:14px 0 0;opacity:0;transition:opacity 2s}
+.show{opacity:1!important}
+
+/* opening */
+#intro{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px;text-align:center;transition:opacity 1.4s ease,visibility 0s 1.4s;
+  background:
+   radial-gradient(ellipse at 50% 45%,rgba(60,85,140,.18),transparent 65%),
+   radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.45) 100%),
+   url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .07 0'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>"),
+   repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 1px,rgba(0,0,0,.18) 1px 3px),
+   #17233f}
+#intro.out{opacity:0;visibility:hidden;pointer-events:none}
+.frame{width:min(68vw,300px);aspect-ratio:4/5;padding:10px;border:1px solid rgba(244,236,216,.55);border-radius:999px 999px 10px 10px;box-shadow:0 20px 70px rgba(0,0,0,.55);opacity:0;transform:translateY(14px) scale(.97);animation:rise 1.6s .3s cubic-bezier(.16,1,.3,1) forwards}
+.frame div{width:100%;height:100%;border-radius:999px 999px 4px 4px;overflow:hidden;background:linear-gradient(160deg,#22305a,#121b33);display:flex;align-items:center;justify-content:center;border:1px solid rgba(244,236,216,.25)}
+.frame img{width:100%;height:100%;object-fit:cover;display:block}
+.frame span{font-family:var(--sans);font-weight:300;font-size:11px;letter-spacing:.35em;text-transform:uppercase;opacity:.5}
+#for{font-family:var(--sans);font-weight:300;font-size:12px;letter-spacing:.4em;text-transform:uppercase;margin:28px 0 0;opacity:0;animation:rise 1.4s 1.1s forwards}
+#next{margin-top:22px;background:none;border:0;color:var(--fg);font-family:var(--serif);font-style:italic;font-size:24px;cursor:pointer;padding:6px 18px;opacity:0;animation:rise 1.4s 1.6s forwards;display:flex;flex-direction:column;align-items:center;gap:8px}
+#next::after{content:"";width:1px;height:34px;background:linear-gradient(var(--accent),transparent);transition:height .4s}
+#next:hover::after{height:48px}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* letter */
+#modal{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0);backdrop-filter:blur(0);-webkit-backdrop-filter:blur(0);visibility:hidden;transition:background .7s ease,backdrop-filter .7s ease,-webkit-backdrop-filter .7s ease,visibility 0s .8s}
+#modal.open{background:rgba(0,0,0,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);visibility:visible;transition:background .7s ease,backdrop-filter .7s ease,-webkit-backdrop-filter .7s ease}
+#kertas{position:relative;background:radial-gradient(ellipse at 50% 35%,rgba(255,255,255,.4),transparent 70%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42  0 0 0 0 .34  0 0 0 0 .22  0 0 0 .2 0'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>"),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='.012 .5' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .42  0 0 0 0 .3  0 0 0 .14 0'/></filter><rect width='400' height='400' filter='url(%23f)'/></svg>"),#eee6d4;color:#2b2118;border-radius:8px;max-width:460px;width:100%;max-height:86vh;overflow:auto;padding:36px 30px 28px;box-shadow:0 30px 90px rgba(0,0,0,.7),inset 0 0 50px rgba(130,100,60,.22);
+  opacity:0;transform:translate(var(--tx,0),var(--ty,0)) scale(.12);transition:transform .8s cubic-bezier(.7,0,.84,0),opacity .5s ease .1s}
+#modal.open #kertas{opacity:1;transform:none;transition:transform 1s cubic-bezier(.16,1,.3,1),opacity .6s ease}
+#kertas>*{opacity:0}
+#modal.open #kertas>*{animation:rise .9s cubic-bezier(.16,1,.3,1) both}
+#modal.open #kertas>:nth-child(1){animation-delay:.45s}
+#modal.open #kertas>:nth-child(2){animation-delay:.6s}
+#modal.open #kertas>:nth-child(3){animation-delay:.75s}
+#modal.open #kertas>:nth-child(4){animation-delay:.95s}
+#modal.open #kertas>:nth-child(5){animation-delay:1.1s}
+#jdl{margin:0 0 16px;font-size:34px;font-style:italic;font-weight:500;color:#8a5a1c;text-align:center}
+#foto{width:100%;border-radius:4px;margin-bottom:18px;display:block}
+#isi{white-space:pre-wrap;line-height:1.8;font-size:22px;margin:0;font-weight:500;color:#2b2118}
+#dari{margin:22px 0 0;text-align:right;font-style:italic;font-size:22px;color:#8a5a1c}
+#tutup{display:block;margin:22px auto 0;background:none;border:0;border-bottom:1px solid #b9a98a;color:#2b2118;padding:4px 6px;font-family:var(--sans);font-weight:300;font-size:11px;letter-spacing:.35em;text-transform:uppercase;cursor:pointer}
+.hl{padding:.05em .32em;border-radius:7px;-webkit-box-decoration-break:clone;box-decoration-break:clone;color:#2b2118;background:#f8e93a;mix-blend-mode:multiply}
+.hl-yellow{background:#f8e93a}.hl-pink{background:#f6b7d1}.hl-purple{background:#c8b3e9}.hl-orange{background:#f5a54c}.hl-green{background:#abd96e}.hl-blue{background:#8dd2ee}.hl-grey{background:#dcdcdc}.hl-black{background:#111;color:#fff;mix-blend-mode:normal}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="frame"><div id="fw"><span>Your photo</span></div></div>
+  <p id="for"></p>
+  <button id="next">Next</button>
+</div>
+
+<canvas id="c" width="600" height="720"></canvas>
+<p id="hint">Tap a flower</p>
+<button id="snd" style="display:none">Sound on</button>
+
+<div id="modal"><div id="kertas">
+  <h2 id="jdl"></h2><img id="foto" alt="" hidden><p id="isi"></p><p id="dari"></p>
+  <button id="tutup">Close</button>
+</div></div>
+
+<script>
+/* ============ EDIT HERE ============ */
+const CONFIG = {
+  // Photo inside the opening frame. Paste an image as base64 (data:image/jpeg;base64,...). Leave "" for the empty frame.
+  openingPhoto: "Home 3.jpg",
+  openingText: "Cessa, The Love Of My Life",
+  from: "With love, Ari",
+  // Music: base64 audio (data:audio/mpeg;base64,...). start/end = seconds inside that file; end 0 = play to the end.
+  music: { src: "cico buff.mp3", start: 135, end: 0, volume: .8 },
+  // One entry = one flower (max 21). Add or remove entries and the bouquet follows.
+  // Highlight words like this: [yellow|some words]. Colors: yellow pink purple orange green blue grey black
+  // photo: base64 image or "" for none. Use \n for a new line.
+  letters: [
+    { title: "Sorry", photo: "", text: "I want to say [pink|sorry] for everything i've done to you.\n\nI regret my actions and i really want to make things right." },
+    { title: "Thank You", photo: "", text: "[purple|Thank you] for being part of my life.\nYou're [green|the best thing] that happened in my life." },
+    { title: "Memories", photo: "", text: "I still remember the [blue|conversation that start us].\ni wish i can turn back the time and treat you better." },
+    { title: "Your Smile", photo: "", text: "You have the kind of smile that [yellow|fixes a bad day].\nPlease [black|never lose it]." },
+    { title: "I Love You", photo: "", text: "I'll Always Love You In Every Universe.\nI Love You so much, and in every universe, i would chose you to be my girlfriend." },
+    { title: "Late Nights", photo: "", text: "i miss all those late night talk, midnight kisses and hug, also stroling around with you." },
+    { title: "What I Learned", photo: "", text: "You taught me to be more patient and more honest. i will change my bad behaivor to keep you in my heart." },
+    { title: "Wishes", photo: "", text: "I hope our paths cross again,\ni will treat you better, i promise." },
+    { title: "Grateful", photo: "", text: "I'm so grateful i got to meet you and be a part of your life." },
+    { title: "Proud of You", photo: "", text: "I have always been [pink|proud of you].\nKeep chasing everything you dream about. i belive you can achieve it baby !!." },
+    { title: "Take Care", photo: "", text: "Eat well, sleep enough, love yourself and be kind to yourself.\n[green|You deserve it]." },
+    { title: "Rainy Days", photo: "", text: "I still smile when it rains.\ni remember we ended up not going to school because we got caught in the rain on the way there." },
+    { title: "Your Laugh", photo: "", text: "Your laugh is one of my favorite sounds in the world. i wish i could hear your laugh every day." },
+    { title: "Courage", photo: "", text: "You are [orange|stronger and smarter than you think].\nI hope you remember that on hard days baby !!." },
+    { title: "Little Joys", photo: "", text: "Cheap snacks, long walks, silly jokes, watching random movies/yt while we eat.\nThose were my favorite days with you." },
+    { title: "Jajanan Teteh", photo: "", text: "I still remember how we used to buy snack from Teteh after school or whenever we hung out.\nI miss those moments so much ." },
+    { title: "Songs", photo: "", text: "Some songs will always sound like us. Tentang masa depan will always be my go-to song whenever i miss you." },
+    { title: "Promise", photo: "", text: "I promise to keep becoming a better person.\nI promise to change my bad behavior. i promise i will treat you better ." },
+    { title: "Hope", photo: "", text: "I hope life is gentle with you.\nI hope you find everything you are looking for." },
+    { title: "Always", photo: "", text: "Wherever life takes you, i'll always be here and a part of me will be cheering for you." },
+    { title: "The End", photo: "", text: "That is all from me.\nHope you like it ya." }
+  ]
+};
+/* ===================================== */
+
+const W=600,H=720,CW=6,CH=8,RAMP=" .:-=+*#%@";
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+const off=document.createElement("canvas");off.width=W;off.height=H;
+const o=off.getContext("2d",{willReadFrequently:true});
+const cache=document.createElement("canvas");cache.width=W;cache.height=H;
+const cx2=cache.getContext("2d");
+
+const RED=[205,28,45],PINK=[220,95,175],YEL=[245,205,70],CRM=[250,228,208],WINE=[165,25,60],ORG=[240,130,60];
+const SLOTS=[
+ {x:256,y:95,r:58,c:RED},{x:344,y:95,r:58,c:YEL},
+ {x:212,y:160,r:58,c:PINK},{x:300,y:160,r:58,c:CRM},{x:388,y:160,r:58,c:WINE},
+ {x:168,y:225,r:58,c:YEL},{x:256,y:225,r:58,c:PINK},{x:344,y:225,r:58,c:RED},{x:432,y:225,r:58,c:ORG},
+ {x:124,y:290,r:58,c:CRM},{x:212,y:290,r:58,c:RED},{x:300,y:290,r:58,c:YEL},{x:388,y:290,r:58,c:WINE},{x:476,y:290,r:58,c:PINK},
+ {x:168,y:355,r:58,c:ORG},{x:256,y:355,r:58,c:CRM},{x:344,y:355,r:58,c:PINK},{x:432,y:355,r:58,c:YEL},
+ {x:212,y:420,r:58,c:RED},{x:300,y:420,r:58,c:WINE},{x:388,y:420,r:58,c:ORG}
+];
+const F=CONFIG.letters.slice(0,SLOTS.length).map((l,i)=>{const s=SLOTS[i],bx=300+(s.x-300)*.04,cxp=300+(s.x-300)*.55,cyp=705-(705-s.y)*.4;
+ return {...s,i,rot:i*.73,d:i*.18,bx,cxp,cyp,dir:Math.atan2(s.x-cxp,-(s.y-cyp)),
+  leaves:[0,1,2,3].map(k=>({u:.12+k*.12+Math.random()*.05,side:s.x<296?-1:s.x>304?1:((k+i)%2?1:-1),len:95+Math.random()*60,ang:.6+Math.random()*.45}))};});
+const order=[...F].sort((a,b)=>a.y-b.y);
+const END=2.6+F.length*.18+4.2;
+const blades=Array.from({length:0},()=>({x:300+(Math.random()-.5)*190,h:80+Math.random()*170,k:(Math.random()-.5)*110,d:Math.random()*1.6,g:130+Math.random()*50|0}));
+const stars=Array.from({length:70},()=>({x:Math.random()*W,y:Math.random()*H,p:Math.random()*6}));
+const sm=x=>{x=x<0?0:x>1?1:x;return x*x*x*(x*(x*6-15)+10)};
+const ease=t=>t<=0?0:t>=1?1:1-Math.pow(1-t,3);
+const col=(c,k=1)=>`rgb(${Math.min(255,c[0]*k)|0},${Math.min(255,c[1]*k)|0},${Math.min(255,c[2]*k)|0})`;
+
+function petal(len,wid,c){
+  const g=o.createLinearGradient(0,0,0,-len);
+  g.addColorStop(0,"rgb(190,210,90)");g.addColorStop(.25,col(c,1.25));g.addColorStop(1,col(c,.85));
+  o.beginPath();o.moveTo(0,0);
+  o.bezierCurveTo(wid,-len*.3,wid*.7,-len*.8,0,-len);
+  o.bezierCurveTo(-wid*.7,-len*.8,-wid,-len*.3,0,0);
+  o.fillStyle=g;o.fill();o.strokeStyle=col(c,.55);o.lineWidth=2;o.stroke();
+  o.strokeStyle=col(c,1.5);o.beginPath();o.moveTo(0,-len*.1);o.lineTo(0,-len*.85);o.stroke();
+  o.fillStyle=col(c,.4);
+  for(let i=1;i<=5;i++){o.beginPath();o.arc((i%2?-1:1)*wid*.18,-len*(.12+i*.1),2,0,7);o.fill();}
+}
+const clamp=x=>Math.max(0,Math.min(1,x));
+const eob=x=>{x=clamp(x);return 1+1.6*Math.pow(x-1,3)+.6*Math.pow(x-1,2);};
+const mix=(a,b,k)=>[a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k];
+function flower(f,b){
+  if(b<=0)return;
+  const g0=clamp(b/.35),sy=1-.12*sm((b-.3)/.5);
+  o.save();o.translate(f.x,f.y);o.scale(1,sy);
+  for(let i=0;i<6;i++){
+    const q=(b-.3-(i%2)*.1)/.55,s=sm(q),sb=eob(sm(q)),k=i%2?.9:1;
+    const closed=f.dir+(i-2.5)*.09;
+    let d=f.rot+i*Math.PI/3-closed;d=(((d+Math.PI)%(2*Math.PI))+2*Math.PI)%(2*Math.PI)-Math.PI;
+    o.save();o.rotate(closed+d*sb);
+    petal(f.r*(.12+.43*sm(g0)+.45*s)*k,f.r*.3*(.3+.7*s)*k,mix(f.c,[70,130,50],(1-s)*.35));
+    o.restore();
+  }
+  const ss=sm((b-.6)/.35);
+  if(ss>0){
+    o.strokeStyle="rgb(120,40,30)";o.fillStyle="rgb(90,30,20)";o.lineWidth=2;
+    for(let i=0;i<6;i++){const a=f.rot+i*1.05+.3,l=f.r*.42*ss;
+      o.beginPath();o.moveTo(0,0);o.lineTo(Math.cos(a)*l,Math.sin(a)*l);o.stroke();
+      o.beginPath();o.arc(Math.cos(a)*l,Math.sin(a)*l,3,0,7);o.fill();}
+  }
+  o.restore();
+}
+function leafAt(f,u){const v=1-u;return{x:v*v*f.bx+2*u*v*f.cxp+u*u*f.x,y:v*v*705+2*u*v*f.cyp+u*u*f.y};}
+function leaf(len,wid,side){
+  const tx=side*len*.18,g=o.createLinearGradient(0,0,0,-len);
+  g.addColorStop(0,"rgb(35,100,35)");g.addColorStop(1,"rgb(105,195,65)");
+  o.beginPath();o.moveTo(0,0);
+  o.bezierCurveTo(wid,-len*.25,wid*.7+tx*.6,-len*.75,tx,-len);
+  o.bezierCurveTo(-wid*.7+tx*.6,-len*.7,-wid,-len*.25,0,0);
+  o.fillStyle=g;o.fill();o.strokeStyle="rgb(30,80,30)";o.lineWidth=1.5;o.stroke();
+  o.strokeStyle="rgb(150,220,100)";o.beginPath();o.moveTo(0,-len*.05);o.quadraticCurveTo(tx*.3,-len*.5,tx*.9,-len*.9);o.stroke();
+}
+function leaves(f,st){
+  f.leaves.forEach(l=>{const p=sm((st-l.u)/.35);if(p<=0)return;const q=leafAt(f,l.u);
+    o.save();o.translate(q.x,q.y);o.rotate(l.side*l.ang);leaf(l.len*p,l.len*.12*p,l.side);o.restore();});
+}
+function stem(f,t){
+  const by=705;
+  o.strokeStyle="rgb(70,150,50)";o.lineWidth=7;o.lineCap="round";o.lineJoin="round";o.beginPath();
+  const n=90,m=Math.ceil(n*t);
+  for(let k=0;k<=m;k++){const u=Math.min(k/n,t),v=1-u,x=v*v*f.bx+2*u*v*f.cxp+u*u*f.x,y=v*v*by+2*u*v*f.cyp+u*u*f.y;k?o.lineTo(x,y):o.moveTo(x,y);}
+  o.stroke();
+}
+function ribbon(t){
+  const p=sm((t-2.2)/1.3);if(p<=0)return;
+  o.save();o.globalAlpha=p;
+  const g=o.createLinearGradient(0,612,0,648);g.addColorStop(0,"rgb(245,170,190)");g.addColorStop(1,"rgb(205,100,135)");
+  o.fillStyle=g;o.fillRect(238,618,124,24);
+  o.fillStyle="rgb(225,125,155)";
+  [[-1,-.35],[1,.35]].forEach(([s,a])=>{o.save();o.translate(300+s*34,630);o.rotate(a*s*-1);o.beginPath();o.ellipse(0,0,36,18,0,0,7);o.fill();o.restore();
+    o.beginPath();o.moveTo(300,636);o.lineTo(300+s*30,700);o.lineTo(300+s*8,696);o.closePath();o.fill();});
+  o.fillStyle="rgb(250,190,205)";o.beginPath();o.arc(300,630,11,0,7);o.fill();
+  o.restore();
+}
+function scene(t){
+  o.fillStyle="#000";o.fillRect(0,0,W,H);
+  blades.forEach(b=>{
+    const p=ease((t-b.d*.8)/2.2);if(p<=0)return;
+    o.strokeStyle=`rgb(60,${b.g},45)`;o.lineWidth=4;o.beginPath();
+    o.moveTo(b.x,H-12);o.quadraticCurveTo(b.x+b.k*.4,H-12-b.h*p*.6,b.x+b.k,H-12-b.h*p);o.stroke();
+  });
+  F.forEach(f=>{const st=sm((t-.3-f.d*.2)/3.2);stem(f,st);leaves(f,st);});
+  ribbon(t);
+  order.forEach(f=>flower(f,clamp((t-2.6-f.d)/3.8)));
+}
+const CS=[];
+function cs(r,g,b){const k=((r>>4)<<8)|((g>>4)<<4)|(b>>4);return CS[k]||(CS[k]=`rgb(${Math.min(255,(r>>4)*19)},${Math.min(255,(g>>4)*19)},${Math.min(255,(b>>4)*19)})`);}
+function ascii(target){
+  const img=o.getImageData(0,0,W,H).data;
+  target.clearRect(0,0,W,H);target.font=CH+"px monospace";target.textBaseline="top";
+  for(let y=0;y<H;y+=CH)for(let x=0;x<W;x+=CW){
+    const i=(((y+CH/2)|0)*W+((x+CW/2)|0))*4,r=img[i],g=img[i+1],b=img[i+2],m=Math.max(r,g,b);
+    if(m<28)continue;
+    target.fillStyle=cs(r,g,b);
+    target.fillText(RAMP[Math.min(9,(m/256*10)|0)],x,y);
+  }
+}
+let t0=0,done=false,go=false,last=0;
+function frame(now){
+  if(go){
+    const t=(now-t0)/1000;
+    if(!done&&now-last>33){last=now;scene(t);ascii(cx2);if(t>END){done=true;document.getElementById("hint").classList.add("show");}}
+    ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.drawImage(cache,0,0);
+    stars.forEach(s=>{const a=.25+.5*Math.abs(Math.sin(now/900+s.p));ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fillRect(s.x,s.y,2,2);});
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* music */
+let au=null;
+function playMusic(){
+  const m=CONFIG.music;if(!m||!m.src)return;
+  au=new Audio(m.src);au.loop=false;au.volume=0;
+  au.addEventListener("loadedmetadata",()=>{if(m.start)au.currentTime=m.start;});
+  au.addEventListener("timeupdate",()=>{
+    const t=au.currentTime,e=m.end||au.duration;
+    au.volume=Math.max(0,Math.min(1,(t-m.start)/2.5,(e-t)/4))*m.volume;
+    if(t>=e)au.pause();
+  });
+  au.play().catch(()=>{});
+  const b=document.getElementById("snd");b.style.display="block";
+  b.onclick=()=>{au.muted=!au.muted;b.textContent=au.muted?"Sound off":"Sound on";};
+}
+
+/* opening */
+document.getElementById("for").textContent=CONFIG.openingText;
+if(CONFIG.openingPhoto){const im=new Image();im.alt="";im.src=CONFIG.openingPhoto;const w=document.getElementById("fw");w.innerHTML="";w.appendChild(im);}
+const intro=document.getElementById("intro");
+document.getElementById("next").onclick=()=>{
+  intro.classList.add("out");
+  playMusic();
+  setTimeout(()=>{go=true;t0=performance.now();},500);
+};
+
+const esc=t=>String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const COLORS=["yellow","pink","purple","orange","green","blue","grey","black"];
+const fmt=t=>esc(t).replace(/\[(\w+)\|([^\]]+)\]/g,(m,c,x)=>COLORS.includes(c)?`<mark class="hl hl-${c}">${x}</mark>`:m);
+/* letters */
+const modal=document.getElementById("modal"),paper=document.getElementById("kertas");
+function pos(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
+function hit(p){for(let k=order.length-1;k>=0;k--){const f=order[k];if(Math.hypot(p.x-f.x,(p.y-f.y)/.88)<f.r*.8)return f;}return null;}
+function close(){modal.classList.remove("open");}
+cv.addEventListener("click",e=>{
+  if(!done)return;const f=hit(pos(e));if(!f)return;
+  const s=CONFIG.letters[f.i];
+  document.getElementById("jdl").innerHTML=esc(s.title);
+  document.getElementById("isi").innerHTML=fmt(s.text);
+  document.getElementById("dari").textContent=CONFIG.from;
+  const im=document.getElementById("foto");if(s.photo){im.src=s.photo;im.hidden=false;}else im.hidden=true;
+  const r=cv.getBoundingClientRect();
+  paper.style.setProperty("--tx",(r.left+f.x*r.width/W-innerWidth/2)+"px");
+  paper.style.setProperty("--ty",(r.top+f.y*r.height/H-innerHeight/2)+"px");
+  paper.scrollTop=0;
+  requestAnimationFrame(()=>modal.classList.add("open"));
+});
+cv.addEventListener("mousemove",e=>{cv.style.cursor=done&&hit(pos(e))?"pointer":"default";});
+document.getElementById("tutup").onclick=close;
+modal.addEventListener("click",e=>{if(e.target===modal)close();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")close();});
+</script>
+</body>
+</html>
